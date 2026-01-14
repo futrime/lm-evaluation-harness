@@ -1,3 +1,4 @@
+import json
 from typing import cast, override
 
 from tqdm import tqdm
@@ -67,7 +68,9 @@ class ParallelThinkingLM(LocalChatCompletion):
         results = []
 
         for request in tqdm(requests):
-            prompt: str = request.args[0]
+            prompt = request.args[0]
+            if isinstance(prompt, tuple):
+                prompt = prompt[0]
             prompt = (
                 prompt
                 + " Please reason step by step, and put your final answer within \\boxed{}."
@@ -111,6 +114,7 @@ class ParallelThinkingLM(LocalChatCompletion):
         """
 
         # Step 1: Think.
+
         if tool_call_id is not None:
             step1_messages = history + [
                 {
@@ -156,7 +160,10 @@ class ParallelThinkingLM(LocalChatCompletion):
 
         sub_resp_messages: list[list[dict]] = []
         for think_tool_call in think_tool_calls:
-            sub_goal: str = think_tool_call["arguments"]["goal"]
+            args = think_tool_call["function"]["arguments"]
+            if isinstance(args, str):
+                args = json.loads(args)
+            sub_goal: str = args["goal"]
 
             sub_resp_msgs = self._invoke_thinker(
                 goal=sub_goal,
