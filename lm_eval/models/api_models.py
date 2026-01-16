@@ -680,7 +680,7 @@ class TemplateAPI(TemplateLM):
         return re_ord.get_original(res)
 
     def generate_until(
-        self, requests: List[Instance], disable_tqdm: bool = False
+        self, requests: List[Instance], disable_tqdm: bool = False, disable_len_check_warn: bool = False
     ) -> List[str]:
         res = []
 
@@ -729,12 +729,12 @@ class TemplateAPI(TemplateLM):
         chunked = re_ord.get_batched(
             n=self._batch_size if self._concurrent <= 1 else 0, batch_fn=None
         )
-        if not self.tokenized_requests:
+        if not self.tokenized_requests and not disable_len_check_warn:
             eval_logger.info(
                 "Tokenized requests are disabled. Context + generation length is not checked."
             )
         if self._concurrent <= 1:
-            pbar = tqdm(desc="Requesting API", total=len(requests))
+            pbar = tqdm(desc="Requesting API", total=len(requests), disable=disable_tqdm)
             for chunk in chunked:
                 contexts, all_gen_kwargs, encodings_list = zip(*chunk)
                 if self.tokenized_requests:
